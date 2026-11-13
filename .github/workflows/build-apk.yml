@@ -1,34 +1,49 @@
+
 name: Build APK
+
 on:
   workflow_dispatch:
   push:
     branches: [main]
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+
     permissions:
       contents: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Install SDK platform
-        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
-      - name: Gradle
+
+      - name: Configurar Android SDK
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
+      - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Compile APK
+
+      - name: Compilar AntiPT
         run: gradle --no-daemon :app:assembleDebug
-      - name: Rename APK
+
+      - name: Renomear APK
         run: cp app/build/outputs/apk/debug/app-debug.apk AntiPT.apk
-      - name: Upload APK
+
+      - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
           name: AntiPT-apk
